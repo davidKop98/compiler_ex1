@@ -72,10 +72,12 @@ import java_cup.runtime.*;
 /* MACRO DECLARATIONS */
 /***********************/
 LineTerminator	= \r|\n|\r\n
-WhiteSpace		= {LineTerminator} | [ \t]
+WhiteSpace		= {LineTerminator} | [ \t\f]+
 INTEGER			= 0 | [1-9][0-9]*
-ID				= [a-z]+
-
+LETTER         	= [A-Za-z]
+DIGIT          = [0-9]
+ID             = {LETTER}({LETTER}|{DIGIT})*
+STRING 			= \"{LETTER}*\"
 /******************************/
 /* DOLLAR DOLLAR - DON'T TOUCH! */
 /******************************/
@@ -93,14 +95,45 @@ ID				= [a-z]+
 /**************************************************************/
 
 <YYINITIAL> {
+"class"  			{ return symbol(TokenNames.CLASS); } //KEYWORDS:
+"nil"     			{ return symbol(TokenNames.NIL); }
+"array"  			{ return symbol(TokenNames.ARRAY); }
+"while"  			{ return symbol(TokenNames.WHILE); }
+"int"     			{ return symbol(TokenNames.TYPE_INT); }
+"void"    			{ return symbol(TokenNames.TYPE_VOID); }
+"extends" 			{ return symbol(TokenNames.EXTENDS); }
+"return"  			{ return symbol(TokenNames.RETURN); }
+"new"     			{ return symbol(TokenNames.NEW); }
+"if"      			{ return symbol(TokenNames.IF); }
+"else"    			{ return symbol(TokenNames.ELSE); }
+"string"  			{ return symbol(TokenNames.TYPE_STRING); }
 
+":="   				{ return symbol(TokenNames.ASSIGN); }
+"["    				{ return symbol(TokenNames.LBRACK); }
+"]"    				{ return symbol(TokenNames.RBRACK); }
+"{"   				{ return symbol(TokenNames.LBRACE); }
+"}"    				{ return symbol(TokenNames.RBRACE); }
+","    				{ return symbol(TokenNames.COMMA); }
+"."   			 	{ return symbol(TokenNames.DOT); }
+";"   				{ return symbol(TokenNames.SEMICOLON); }
+"<"    			{ return symbol(TokenNames.LT); }
+">"    			{ return symbol(TokenNames.GT); }
+"="    			{ return symbol(TokenNames.EQ); }
 "+"					{ return symbol(TokenNames.PLUS);}
 "-"					{ return symbol(TokenNames.MINUS);}
-"PPP"				{ return symbol(TokenNames.TIMES);}
+"*"					{ return symbol(TokenNames.TIMES);} 
 "/"					{ return symbol(TokenNames.DIVIDE);}
 "("					{ return symbol(TokenNames.LPAREN);}
 ")"					{ return symbol(TokenNames.RPAREN);}
-{INTEGER}			{ return symbol(TokenNames.NUMBER, Integer.valueOf(yytext()));}
+
+{STRING}			{String s = yytext().substring(1, yytext().length()-1);
+					return symbol(TokenNames.STRING, s);}
+
+{INTEGER} 			{int v = Integer.parseInt(yytext()); 
+  					if (v > 32767) { throw new Error("LEX"); } // out of 0..2^15-1
+					return symbol(TokenNames.INT, v);
+					}
+
 {ID}				{ return symbol(TokenNames.ID,     yytext());}
 {WhiteSpace}		{ /* just skip what was found, do nothing */ }
 <<EOF>>				{ return symbol(TokenNames.EOF);}
