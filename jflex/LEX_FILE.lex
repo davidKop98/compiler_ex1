@@ -71,13 +71,21 @@ import java_cup.runtime.*;
 /***********************/
 /* MACRO DECLARATIONS */
 /***********************/
+
 LineTerminator	= \r|\n|\r\n
-WhiteSpace		= {LineTerminator} | [ \t\f]+
+WhiteSpace		= {LineTerminator} | [ \t]+
 INTEGER			= 0 | [1-9][0-9]*
 LETTER         	= [A-Za-z]
 DIGIT          = [0-9]
 ID             = {LETTER}({LETTER}|{DIGIT})*
 STRING 			= \"{LETTER}*\"
+COMMENT_CHAR   = {LETTER}|{DIGIT}|[ \t]|[\(\)\[\]\{\}\?\!\+\-\*\/\.\;]   
+BAD_LINE_CHAR         = [^\r\nA-Za-z0-9 \t\f\(\)\[\]\{\}\?\!\+\-\*\/\.\;]  
+COMMENT_CHAR_V2  = {LETTER}|{DIGIT}|[ \t]|{LineTerminator}|[\(\)\[\]\{\}\?\!\+\-\*\/\.\;] 
+
+%state COMMENT
+
+
 /******************************/
 /* DOLLAR DOLLAR - DON'T TOUCH! */
 /******************************/
@@ -95,6 +103,13 @@ STRING 			= \"{LETTER}*\"
 /**************************************************************/
 
 <YYINITIAL> {
+{WhiteSpace}		{ /* just skip what was found, do nothing */ }
+"//"[^\r\n]*{BAD_LINE_CHAR}[^\r\n]*{LineTerminator}   { throw new Error("COMMENT ERROR"); }   //comment error
+"//"{COMMENT_CHAR}*{LineTerminator}            { /* skip */ }
+
+"/*"                    { yybegin(COMMENT); }
+
+
 "class"  			{ return symbol(TokenNames.CLASS); } //KEYWORDS:
 "nil"     			{ return symbol(TokenNames.NIL); }
 "array"  			{ return symbol(TokenNames.ARRAY); }
@@ -135,7 +150,12 @@ STRING 			= \"{LETTER}*\"
 					}
 
 {ID}				{ return symbol(TokenNames.ID,     yytext());}
-{WhiteSpace}		{ /* just skip what was found, do nothing */ }
 <<EOF>>				{ return symbol(TokenNames.EOF);}
 .					{ throw new Error("UNKOWN CHAR"); }
+}
+<COMMENT>{
+   "*/" { yybegin(YYINITIAL); }
+  {COMMENT_CHAR_V2}   { /* Skip valid comment characters */ }
+  [^]              { throw new Error("Invalid character in /* comment"); }
+  <<EOF>>          { throw new Error("Unclosed comment"); }
 }

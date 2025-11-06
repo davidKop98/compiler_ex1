@@ -128,9 +128,8 @@ public class Main
     	}	     
 		catch (Throwable e)
 		{
-			System.err.println("ERRRRORR BRRRRR: ");
 			e.printStackTrace();
-			System.exit(0);	
+			//System.exit(0);	
 		}
 	}
 }
