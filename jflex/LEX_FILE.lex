@@ -71,13 +71,17 @@ import java_cup.runtime.*;
 /***********************/
 /* MACRO DECLARATIONS */
 /***********************/
-LineTerminator	= \r|\n|\r\n
-WhiteSpace		= {LineTerminator} | [ \t\f]+
+LineTerminator	= \r|\n
+WhiteSpace		= {LineTerminator} | [ \t]+
 INTEGER			= 0 | [1-9][0-9]*
 LETTER         	= [A-Za-z]
 DIGIT          = [0-9]
 ID             = {LETTER}({LETTER}|{DIGIT})*
 STRING 			= \"{LETTER}*\"
+COMMENT_CHAR = {LETTER}|{DIGIT}|[ \t]|[\(\)\[\]\{\}\?\!\+\-\*\/\.\;] //allowed comment chars (\n not allowed)
+ 
+%state COMMENT
+
 /******************************/
 /* DOLLAR DOLLAR - DON'T TOUCH! */
 /******************************/
@@ -95,6 +99,19 @@ STRING 			= \"{LETTER}*\"
 /**************************************************************/
 
 <YYINITIAL> {
+
+"//"{COMMENT_CHAR}*{LineTerminator}   { /* skip */ }
+
+/* Type-2 block comments: start with /* and end with */.
+   Inside, ONLY COMMENT_CHAR is allowed; unclosed => lexical error. */
+"/*"              			 { yybegin(COMMENT); }
+<COMMENT>{COMMENT_CHAR}+     { /* stay */ }
+<COMMENT>{LineTerminator}*   { /* stay */ }
+<COMMENT>"*/"                { yybegin(YYINITIAL); }
+<COMMENT><<EOF>>             { throw new Error("LEX"); }  /* unclosed block comment */
+<COMMENT>.                   { throw new Error("LEX"); }  /* disallowed char in comment */
+
+
 "class"  			{ return symbol(TokenNames.CLASS); } //KEYWORDS:
 "nil"     			{ return symbol(TokenNames.NIL); }
 "array"  			{ return symbol(TokenNames.ARRAY); }
@@ -131,10 +148,16 @@ STRING 			= \"{LETTER}*\"
 
 {INTEGER} 			{int v = Integer.parseInt(yytext()); 
   					if (v > 32767) { throw new Error("LEX"); } // out of 0..2^15-1
-					return symbol(TokenNames.INT, v);
-					}
+					return symbol(TokenNames.INT, v);}
+					
+\"[^\r\n\"]*\"       { throw new Error("LEX"); }
+\"[^\r\n\"]*{LineTerminator}  { throw new Error("LEX"); }
+\"[^\r\n\"]*	{throw new Error("LEX");}
 
 {ID}				{ return symbol(TokenNames.ID,     yytext());}
 {WhiteSpace}		{ /* just skip what was found, do nothing */ }
+
+
+
 <<EOF>>				{ return symbol(TokenNames.EOF);}
 }
