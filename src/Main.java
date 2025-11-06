@@ -3,56 +3,22 @@ import java.io.PrintWriter;
 
 import java_cup.runtime.Symbol;
    
-//need to update: lex file, main, tokenNames
+
 public class Main
 {
-	private static String getTokenName(int sym) {  //big table to swap between the tokenName int to the actual tokenName string
-    switch(sym) {
-        case TokenNames.EOF: return "EOF";
-        case TokenNames.PLUS: return "PLUS";
-        case TokenNames.MINUS: return "MINUS";
-        case TokenNames.TIMES: return "TIMES";
-        case TokenNames.DIVIDE: return "DIVIDE";
-        case TokenNames.LPAREN: return "LPAREN";
-        case TokenNames.RPAREN: return "RPAREN";
-        case TokenNames.NUMBER: return "NUMBER";
-        case TokenNames.ID: return "ID";
-        case TokenNames.CLASS: return "CLASS";
-        case TokenNames.NIL: return "NIL";
-        case TokenNames.ARRAY: return "ARRAY";
-        case TokenNames.WHILE: return "WHILE";
-        case TokenNames.TYPE_INT: return "TYPE_INT";
-        case TokenNames.TYPE_VOID: return "TYPE_VOID";
-        case TokenNames.EXTENDS: return "EXTENDS";
-        case TokenNames.RETURN: return "RETURN";
-        case TokenNames.NEW: return "NEW";
-        case TokenNames.IF: return "IF";
-        case TokenNames.ELSE: return "ELSE";
-        case TokenNames.TYPE_STRING: return "TYPE_STRING";
-        case TokenNames.ASSIGN: return "ASSIGN";
-        case TokenNames.EQ: return "EQ";
-        case TokenNames.LBRACK: return "LBRACK";
-        case TokenNames.RBRACK: return "RBRACK";
-        case TokenNames.LBRACE: return "LBRACE";
-        case TokenNames.RBRACE: return "RBRACE";
-        case TokenNames.COMMA: return "COMMA";
-        case TokenNames.DOT: return "DOT";
-        case TokenNames.SEMICOLON: return "SEMICOLON";
-        case TokenNames.LT: return "LT";
-        case TokenNames.GT: return "GT";
-        case TokenNames.STRING: return "STRING";
-        case TokenNames.INT: return "INT";
-        default: return "UNKNOWN";
-    }
-}
+	
 	static public void main(String argv[])
 	{
-		Lexer l;
+		lexer(argv[0],argv[1]);
+	}
+	static public int lexer(String inputFile,String outputFile) //returns -1 on fail (=lexer error). 1 on success
+	{
+		Lexer l = null	;
 		Symbol s;
-		FileReader fileReader;
-		PrintWriter fileWriter;
-		String inputFileName = argv[0];
-		String outputFileName = argv[1];
+		FileReader fileReader = null;
+		PrintWriter fileWriter = null;
+		String inputFileName = inputFile;
+		String outputFileName = outputFile;
 		
 		try
 		{
@@ -125,13 +91,65 @@ public class Main
 			/* [10] Close output file */
 			/**************************/
 			fileWriter.close();
-    	}	     
-		catch (Throwable e)
+        }	     
+		catch (Throwable e) //encountered a lexical error
 		{
-			e.printStackTrace();
-			//System.exit(0);	
+			try {
+				l.yyclose(); 
+				fileReader.close();
+				if (fileWriter != null) {
+					try { fileWriter.close(); } catch (Throwable ignore) {}
+				}
+				PrintWriter pw = new PrintWriter(outputFileName); 
+				pw.print("ERROR"); // no newline
+				pw.close();
+			} catch (Throwable ignore) {
+				return -1;
+			}
+			return -1;
+		}
+		return 1;
+	}
+	private static String getTokenName(int sym) {  //lexer func helper
+		switch(sym) {
+			case TokenNames.EOF: return "EOF";
+			case TokenNames.PLUS: return "PLUS";
+			case TokenNames.MINUS: return "MINUS";
+			case TokenNames.TIMES: return "TIMES";
+			case TokenNames.DIVIDE: return "DIVIDE";
+			case TokenNames.LPAREN: return "LPAREN";
+			case TokenNames.RPAREN: return "RPAREN";
+			case TokenNames.NUMBER: return "NUMBER";
+			case TokenNames.ID: return "ID";
+			case TokenNames.CLASS: return "CLASS";
+			case TokenNames.NIL: return "NIL";
+			case TokenNames.ARRAY: return "ARRAY";
+			case TokenNames.WHILE: return "WHILE";
+			case TokenNames.TYPE_INT: return "TYPE_INT";
+			case TokenNames.TYPE_VOID: return "TYPE_VOID";
+			case TokenNames.EXTENDS: return "EXTENDS";
+			case TokenNames.RETURN: return "RETURN";
+			case TokenNames.NEW: return "NEW";
+			case TokenNames.IF: return "IF";
+			case TokenNames.ELSE: return "ELSE";
+			case TokenNames.TYPE_STRING: return "TYPE_STRING";
+			case TokenNames.ASSIGN: return "ASSIGN";
+			case TokenNames.EQ: return "EQ";
+			case TokenNames.LBRACK: return "LBRACK";
+			case TokenNames.RBRACK: return "RBRACK";
+			case TokenNames.LBRACE: return "LBRACE";
+			case TokenNames.RBRACE: return "RBRACE";
+			case TokenNames.COMMA: return "COMMA";
+			case TokenNames.DOT: return "DOT";
+			case TokenNames.SEMICOLON: return "SEMICOLON";
+			case TokenNames.LT: return "LT";
+			case TokenNames.GT: return "GT";
+			case TokenNames.STRING: return "STRING";
+			case TokenNames.INT: return "INT";
+			default: return "UNKNOWN";
 		}
 	}
+	
 }
 
 
