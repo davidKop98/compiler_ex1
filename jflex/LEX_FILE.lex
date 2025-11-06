@@ -74,14 +74,15 @@ import java_cup.runtime.*;
 
 LineTerminator	= \r|\n|\r\n
 WhiteSpace		= {LineTerminator} | [ \t]+
-INTEGER			= 0 | [1-9][0-9]*
+INTEGER			= [0-9][0-9]* // to prevent integer starting from 0
 LETTER         	= [A-Za-z]
 DIGIT          = [0-9]
 ID             = {LETTER}({LETTER}|{DIGIT})*
 STRING 			= \"{LETTER}*\"
-COMMENT_CHAR   = {LETTER}|{DIGIT}|[ \t]|[\(\)\[\]\{\}\?\!\+\-\*\/\.\;]   
-BAD_LINE_CHAR         = [^\r\nA-Za-z0-9 \t\f\(\)\[\]\{\}\?\!\+\-\*\/\.\;]  
-COMMENT_CHAR_V2  = {LETTER}|{DIGIT}|[ \t]|{LineTerminator}|[\(\)\[\]\{\}\?\!\+\-\*\/\.\;] 
+
+COMMENT_CHAR   = {LETTER}|{DIGIT}|[ \t]|[\(\)\[\]\{\}\?\!\+\-\*\/\.\;]     //for good // comments
+BAD_LINE_CHAR         = [^\r\nA-Za-z0-9 \t\(\)\[\]\{\}\?\!\+\-\*\/\.\;]  //used for bad // comments
+COMMENT_CHAR_V2  = {LETTER}|{DIGIT}|[ \t]|{LineTerminator}|[\(\)\[\]\{\}\?\!\+\-\*\/\.\;] //used for /* comments
 
 %state COMMENT
 
@@ -144,10 +145,15 @@ COMMENT_CHAR_V2  = {LETTER}|{DIGIT}|[ \t]|{LineTerminator}|[\(\)\[\]\{\}\?\!\+\-
 {STRING}			{String s = yytext().substring(1, yytext().length()-1);
 					return symbol(TokenNames.STRING, s);}
 
-{INTEGER} 			{int v = Integer.parseInt(yytext()); 
-  					if (v > 32767) { throw new Error("Integer too large"); } // out of 0..2^15-1
-					return symbol(TokenNames.INT, v);
-					}
+\"[^\r\n\"]*\"   { throw new Error("string with invalid chars"); }  //Bad string handlers:
+\"[^\r\n\"]*{LineTerminator}   { throw new Error("string not closed properly via newline"); }
+\"[^\r\n\"]*    { throw new Error("string not closed properly via eof"); }
+
+{INTEGER} 			{int v = Integer.parseInt(yytext());
+					if (yytext().length() > 1 && yytext().charAt(0) == '0') {
+						throw new Error("Lexical error: Integer cannot start with 0");}
+					if (v > 32767) {throw new Error("Integer too large"); }
+					return symbol(TokenNames.INT, v);}
 
 {ID}				{ return symbol(TokenNames.ID,     yytext());}
 <<EOF>>				{ return symbol(TokenNames.EOF);}
